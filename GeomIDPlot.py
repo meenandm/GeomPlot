@@ -13,13 +13,19 @@ def run(args):
     hitsFile = args[2]
     data = []
     
-    # Create a rendering window and renderer
+    # Create a rendering window and 2 renderers
     ren = vtk.vtkRenderer()
     ren.SetBackground(colorBackground)
+    
+    #Set render window inputs
     renWin = vtk.vtkRenderWindow()
     renWin.AddRenderer(ren)
     
-    
+    # Create a renderwindowinteractor
+    iren = vtk.vtkRenderWindowInteractor()
+    iren.SetRenderWindow(renWin)
+
+    #ObjImporter
     for file in os.listdir(objFolder):
       if file.endswith(".obj"):
         if not(file.__contains__("Endcap")):
@@ -35,20 +41,58 @@ def run(args):
           importer.SetRenderWindow(renWin)
           importer.Update()
 
-    
     #Get all current actors in scene
     actors = ren.GetActors()
     actors.InitTraversal()
     print("There are " , actors.GetNumberOfItems() , " actors")
     
-    #Set them as wireframes
+    #Set their opacity and add glow
     for a in range (actors.GetNumberOfItems()):
-      actors.GetItemAsObject(a).GetProperty().SetOpacity(0.05)
+      actor = actors.GetNextActor()
+      actor.GetProperty().SetOpacity(0.1)
+      actor.GetProperty().SetBackfaceCulling(True)
+
+    
+    #ObjReader
+    for file in os.listdir(objFolder):
+      if file.endswith(".obj"):
+        if not(file.__contains__("Endcap")):
+        #if (file.__contains__("Strips")):
+          objectDataPath  = os.path.join(args[1], file)
+          reader = vtk.vtkOBJReader()
+          reader.SetFileName(objectDataPath)
+          reader.Update()
+          
+          scaleTransform = vtk.vtkTransform()
+          scaleTransform.Scale(1.2,1.2,1.2)
+          
+          scaleFilter = vtk.vtkTransformPolyDataFilter()
+          scaleFilter.SetInputConnection(reader.GetOutputPort())
+          scaleFilter.SetTransform(scaleTransform)
+          scaleFilter.Update()
+          
+          mapper = vtk.vtkPolyDataMapper()
+          mapper.SetInputConnection(scaleFilter.GetOutputPort())
+          
+          actor = vtk.vtkActor()
+          actor.SetMapper(mapper)
+          actor.GetProperty().SetColor(0,0,0)
+          actor.GetProperty().SetOpacity(0.5)
+          actor.GetProperty().SetBackfaceCulling(True)
+          
+          
+          ren.AddActor(actor)
+
+    
+    #Get all current actors in scene
+    actors = ren.GetActors()
+    actors.InitTraversal()
+    print("There are " , actors.GetNumberOfItems() , " actors")   
     
     #Read the data csv and add it to a numpy array
     data = pd.read_csv(hitsFile, usecols = ['evt_ID','m_x', 'm_y', 'm_z']).to_numpy()
     currentEvent = 0
-    currentRGB = [1,0,0]
+    currentRGB = [1,1,1]
     
     for x in range(500):
           point = data[x]
@@ -60,7 +104,6 @@ def run(args):
           sphere = vtk.vtkSphereSource()
           sphere.SetCenter(point[1], point[2], point[3])
           sphere.SetRadius(20)
-          print(point[0], point[1], point[2], point[3])
           
           sphereMapper = vtk.vtkPolyDataMapper()
           sphereMapper.SetInputConnection(sphere.GetOutputPort())
@@ -78,8 +121,6 @@ def run(args):
     for point in data:
       dataPoints.InsertPoint(dataID, point[0], point[1], point[2])
       dataID = dataID + 1
-      
-    print(dataPoints)
     
     #PolyData
     dataPoly = vtk.vtkPolyData()
@@ -92,11 +133,6 @@ def run(args):
     dataPolyActor.SetMapper(dataPolyMapper)
     
     ren.AddActor(dataPolyActor)
-    
-    
-    # Create a renderwindowinteractor
-    iren = vtk.vtkRenderWindowInteractor()
-    iren.SetRenderWindow(renWin)
     
     # Enable user interface interactor
     iren.Initialize()
