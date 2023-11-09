@@ -90,7 +90,7 @@ def run(args):
     print("There are " , actors.GetNumberOfItems() , " actors")   
     
     #Read the data csv and add it to a numpy array
-    data = pd.read_csv(hitsFile, usecols = ['evt_ID','m_x', 'm_y', 'm_z']).to_numpy()
+    data = pd.read_csv(hitsFile, usecols = ['m_eventindex','m_x', 'm_y', 'm_z']).to_numpy()
     currentEvent = 0
     currentRGB = [1,1,1]
     
