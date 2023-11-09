@@ -199,7 +199,7 @@ def csvEventLoader(csvFile, ren, renWin):
         
       #Create Sphere actor
       sphere = vtk.vtkSphereSource()
-      sphere.SetRadius(10)
+      sphere.SetRadius(20)
       sphere.SetCenter(coord[0], coord[1], coord[2])
       sphere.SetThetaResolution(4)
       sphere.SetPhiResolution(4)
